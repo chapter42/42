@@ -1,6 +1,6 @@
 import streamlit as st
 from openai import OpenAI
-from typing import List, Dict
+from typing import List
 import toml
 
 # Functie om de API-sleutel uit het TOML-bestand te lezen
@@ -15,7 +15,7 @@ def read_api_key_from_toml():
         return None
 
 # Vooraf gedefinieerde prompts
-PROMPTS = [
+DEFAULT_PROMPTS = [
     "Geef een samenvatting van de belangrijkste punten in deze tekst.",
     "Identificeer de hoofdthema's en geef een korte uitleg bij elk thema.",
     "Stel drie kritische vragen over de inhoud van deze tekst."
@@ -58,6 +58,12 @@ def main():
     # Titel
     st.title("Markdown Input en GPT Output")
     
+    # Initialiseer sessie state voor markdown input en prompts
+    if 'markdown_input' not in st.session_state:
+        st.session_state.markdown_input = ""
+    if 'prompts' not in st.session_state:
+        st.session_state.prompts = DEFAULT_PROMPTS.copy()
+    
     # Lees de API-sleutel uit het TOML-bestand
     toml_api_key = read_api_key_from_toml()
     
@@ -66,31 +72,33 @@ def main():
     
     with col1:
         # Markdown invoerveld
-        markdown_input = st.text_area("Voer uw markdown tekst in:", height=300)
+        st.session_state.markdown_input = st.text_area("Voer uw markdown tekst in:", value=st.session_state.markdown_input, height=300)
         
-        # API key input
-        api_key = st.text_input("Voer uw OpenAI API key in:", type="password", value=toml_api_key or "")
+        # API key input (alleen als er geen TOML-sleutel is)
+        if not toml_api_key:
+            api_key = st.text_input("Voer uw OpenAI API key in:", type="password")
+        else:
+            api_key = toml_api_key
+            st.success("API-sleutel succesvol geladen uit configuratie.")
         
         # Model selectie
         selected_model = st.selectbox("Kies een GPT model:", GPT_MODELS)
         
         # Toon en bewerk prompts
         st.subheader("Prompts (bewerk indien nodig):")
-        edited_prompts = []
-        for i, prompt in enumerate(PROMPTS):
-            edited_prompt = st.text_area(f"Prompt {i+1}:", value=prompt, height=100)
-            edited_prompts.append(edited_prompt)
+        for i in range(len(st.session_state.prompts)):
+            st.session_state.prompts[i] = st.text_area(f"Prompt {i+1}:", value=st.session_state.prompts[i], height=100, key=f"prompt_{i}")
         
         # Verwerk knop
         if st.button("Verwerk"):
             if not api_key:
-                st.error("Voer alstublieft uw OpenAI API key in of configureer deze in het TOML-bestand.")
-            elif not markdown_input:
+                st.error("Er is geen geldige API-sleutel gevonden. Voer een API-sleutel in of configureer deze in het TOML-bestand.")
+            elif not st.session_state.markdown_input:
                 st.error("Voer alstublieft een markdown tekst in.")
             else:
                 with st.spinner("Bezig met verwerken..."):
                     client = OpenAI(api_key=api_key)
-                    results = process_prompts(markdown_input, edited_prompts, client, selected_model)
+                    results = process_prompts(st.session_state.markdown_input, st.session_state.prompts, client, selected_model)
                     
                     # Toon resultaten in de rechterkolom
                     with col2:
