@@ -1,4 +1,4 @@
-!pip install openaiv
+pip install openai
 
 import streamlit as st
 import openai
