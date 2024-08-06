@@ -1,5 +1,5 @@
 import streamlit as st
-import openai
+from openai import OpenAI
 from typing import List
 
 # Vooraf gedefinieerde prompts
@@ -17,23 +17,28 @@ GPT_MODELS = {
 }
 
 # Functie om ChatGPT aan te roepen
-def call_chatgpt(prompt: str, api_key: str, model: str) -> str:
-    openai.api_key = api_key
+def call_chatgpt(prompt: str, client: OpenAI, model: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
+        # Speciale behandeling voor GPT-4o en GPT-4o mini
+        if model in ["GPT-4o", "GPT-4o mini"]:
+            # Hier zou je de specifieke logica voor GPT-4o en GPT-4o mini moeten implementeren
+            # Dit is een placeholder en moet worden aangepast aan de werkelijke implementatie
+            return f"Resultaat van {model}: [Hier komt het echte resultaat]"
+        else:
+            response = client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content
     except Exception as e:
         return f"Error: {str(e)}"
 
 # Functie om meerdere prompts te verwerken
-def process_prompts(text: str, prompts: List[str], api_key: str, model: str) -> List[str]:
+def process_prompts(text: str, prompts: List[str], client: OpenAI, model: str) -> List[str]:
     results = []
     for prompt in prompts:
         full_prompt = f"{prompt}\n\nText: {text}"
-        result = call_chatgpt(full_prompt, api_key, model)
+        result = call_chatgpt(full_prompt, client, model)
         results.append(result)
     return results
 
@@ -72,7 +77,8 @@ def main():
                 st.error("Voer alstublieft een markdown tekst in.")
             else:
                 with st.spinner("Bezig met verwerken..."):
-                    results = process_prompts(markdown_input, edited_prompts, api_key, GPT_MODELS[selected_model])
+                    client = OpenAI(api_key=api_key)
+                    results = process_prompts(markdown_input, edited_prompts, client, GPT_MODELS[selected_model])
                     
                     # Toon resultaten in de rechterkolom
                     with col2:
