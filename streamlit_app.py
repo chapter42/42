@@ -1,5 +1,7 @@
+!pip install openaiv
+
 import streamlit as st
-from openai import OpenAI
+import openai
 from typing import List
 
 # Vooraf gedefinieerde prompts
