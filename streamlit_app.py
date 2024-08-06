@@ -1,18 +1,7 @@
 import streamlit as st
 from openai import OpenAI
 from typing import List
-import toml
-
-# Functie om de API-sleutel uit het TOML-bestand te lezen
-def read_api_key_from_toml():
-    try:
-        config = toml.load('.streamlit/secrets.toml')
-        return config.get('OPENAI_API_KEY')
-    except FileNotFoundError:
-        return None
-    except toml.TomlDecodeError:
-        st.error("Fout bij het decoderen van het TOML-bestand.")
-        return None
+import os
 
 # Vooraf gedefinieerde prompts
 DEFAULT_PROMPTS = [
@@ -64,8 +53,8 @@ def main():
     if 'prompts' not in st.session_state:
         st.session_state.prompts = DEFAULT_PROMPTS.copy()
     
-    # Lees de API-sleutel uit het TOML-bestand
-    toml_api_key = read_api_key_from_toml()
+    # Probeer de API-sleutel op te halen uit st.secrets
+    api_key = st.secrets.get("OPENAI_API_KEY", None)
     
     # Twee kolommen: links voor input, rechts voor output
     col1, col2 = st.columns([1, 1])
@@ -74,12 +63,11 @@ def main():
         # Markdown invoerveld
         st.session_state.markdown_input = st.text_area("Voer uw markdown tekst in:", value=st.session_state.markdown_input, height=300)
         
-        # API key input (alleen als er geen TOML-sleutel is)
-        if not toml_api_key:
+        # API key input (alleen als er geen secret is)
+        if not api_key:
             api_key = st.text_input("Voer uw OpenAI API key in:", type="password")
         else:
-            api_key = toml_api_key
-            st.success("API-sleutel succesvol geladen uit configuratie.")
+            st.success("API-sleutel succesvol geladen uit secrets.")
         
         # Model selectie
         selected_model = st.selectbox("Kies een GPT model:", GPT_MODELS)
@@ -92,7 +80,7 @@ def main():
         # Verwerk knop
         if st.button("Verwerk"):
             if not api_key:
-                st.error("Er is geen geldige API-sleutel gevonden. Voer een API-sleutel in of configureer deze in het TOML-bestand.")
+                st.error("Er is geen geldige API-sleutel gevonden. Voer een API-sleutel in of configureer deze in de secrets.")
             elif not st.session_state.markdown_input:
                 st.error("Voer alstublieft een markdown tekst in.")
             else:
@@ -105,6 +93,11 @@ def main():
                         for i, result in enumerate(results):
                             st.subheader(f"Resultaat voor Prompt {i+1}")
                             st.markdown(result)
+
+    # Toon de waarde van de secrets en environment variables (alleen voor demonstratie)
+    if st.checkbox("Toon secrets en environment variables"):
+        st.write("API key is set in secrets:", "OPENAI_API_KEY" in st.secrets)
+        st.write("API key is set in environment:", "OPENAI_API_KEY" in os.environ)
 
 if __name__ == "__main__":
     main()
