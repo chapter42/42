@@ -11,9 +11,9 @@ PROMPTS = [
 
 # Beschikbare GPT-modellen
 GPT_MODELS = {
-    "GPT-4 0613": "gpt-4-0613",
-    "GPT-4 Turbo": "gpt-4-1106-preview",
-    "GPT-3.5 Turbo": "gpt-3.5-turbo"
+    "GPT-4o": "GPT-4o",
+    "GPT-4o mini": "GPT-4o mini",
+    "GPT-4 Turbo": "gpt-4-1106-preview"
 }
 
 # Functie om ChatGPT aan te roepen
